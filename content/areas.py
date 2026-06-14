@@ -17,6 +17,7 @@ def _dong(slug, name, title, desc, sections):
         "h1": f"{name} 방문 관리 안내",
         "body": sections + _CTA,
         "breadcrumb": [("대표 행정동별 안내", "/#areas"), (name, None)],
+        "og_image": f"/assets/og/{slug}.png",
     }
 
 

@@ -17,6 +17,7 @@ def _station(slug, name, title, desc, sections):
         "h1": f"{name} 인근 방문 관리 안내",
         "body": sections + _CTA,
         "breadcrumb": [("지하철역별 안내", "/#stations"), (name, None)],
+        "og_image": f"/assets/og/{slug}.png",
     }
 
 
