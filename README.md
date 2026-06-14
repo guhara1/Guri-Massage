@@ -62,6 +62,42 @@ python3 build.py
 
 ## 배포 전 해야 할 일
 
-1. `content/site.py`의 `BASE_URL`을 실제 도메인으로 변경
-2. `python3 build.py` 재실행 (canonical·sitemap·robots.txt에 반영됨)
-3. Google Search Console / 네이버 서치어드바이저에 `sitemap.xml` 제출
+1. `content/site.py`의 `BASE_URL`을 실제 도메인으로 변경 → 현재 `https://guri-massage.pages.dev`
+2. `python3 build.py` 재실행 (canonical·sitemap·rss·robots·IndexNow 키 파일에 반영됨)
+3. 아래 "빠른 색인" 절차 진행
+
+## 빠른 색인 (네이버·구글·빙)
+
+빌드 시 자동 생성되는 색인 자산:
+
+| 파일 | 용도 |
+|------|------|
+| `/sitemap.xml` | 색인 페이지 목록(lastmod·priority 포함) — 구글/네이버 제출용 |
+| `/rss.xml` | 업데이트 피드 — 네이버·빙 등 피드 수집 가속 |
+| `/robots.txt` | 주요 봇 허용 + 사이트맵 위치 안내(네이버 Yeti 포함) |
+| `/{INDEXNOW_KEY}.txt` | IndexNow 키 검증 파일(루트에 위치해야 함) |
+
+### 1) 검색엔진 등록 (최초 1회)
+- **구글 Search Console**: 속성 등록(소유 확인) → 색인 > Sitemaps 에 `sitemap.xml` 제출
+- **네이버 서치어드바이저**: 사이트 등록 → 요청 > 사이트맵 제출에 `sitemap.xml`, RSS 제출에 `rss.xml`
+- **빙 Webmaster Tools**: 사이트 추가 → 사이트맵 `sitemap.xml` 제출
+
+### 2) IndexNow — 빙·네이버·얀덱스 즉시 색인 통보 (글 추가/수정 때마다)
+```bash
+python3 scripts/indexnow.py                  # 사이트맵 전체 통보
+python3 scripts/indexnow.py https://guri-massage.pages.dev/guri/...  # 특정 URL만
+```
+- 키 파일 `/{INDEXNOW_KEY}.txt` 가 배포되어 접근 가능해야 동작합니다(빌드가 생성).
+- Cloudflare Pages 사용 시 대시보드 **Caching → Crawler Hints(IndexNow)** 를 켜면 변경분이 자동 통보되기도 합니다.
+
+### 3) (선택) 구글 Indexing API — 개별 URL 즉시 요청
+구글은 IndexNow 미참여. 공식적으로 Indexing API 는 JobPosting/BroadcastEvent 전용이라,
+일반 페이지는 **Search Console 색인 요청**이 정석입니다. 그래도 쓰려면:
+```bash
+pip install google-auth requests
+GOOGLE_APPLICATION_CREDENTIALS=service-account.json python3 scripts/google_indexing.py
+```
+서비스 계정 생성 → Indexing API 사용 설정 → Search Console 소유자로 추가가 선행되어야 합니다.
+
+> 참고: 구글·빙의 익명 `sitemap ping` 엔드포인트는 2023~2024년에 폐기되어 더 이상 동작하지 않습니다.
+> 따라서 빠른 색인은 **Search Console/서치어드바이저 제출 + IndexNow** 조합이 현재 표준입니다.

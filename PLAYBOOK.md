@@ -43,7 +43,13 @@ assets/
   og/{slug}.png     # 페이지별 검색 썸네일
 scripts/
   gen_thumbs.py     # 페이지별 og 썸네일 생성기 (Pillow + cairosvg)
+  indexnow.py       # IndexNow 즉시 색인 통보 (빙·네이버·얀덱스)
+  google_indexing.py# (선택) 구글 Indexing API URL 통보
 ```
+
+빌드가 자동 생성하는 색인 자산: `sitemap.xml`(lastmod·priority), `rss.xml`(업데이트 피드),
+`robots.txt`(주요 봇 허용+사이트맵), `{INDEXNOW_KEY}.txt`(IndexNow 키 파일).
+새 지역은 `content/site.py`의 `INDEXNOW_KEY`를 새 키로 교체(`python3 -c "import secrets;print(secrets.token_hex(16))"`).
 
 페이지 정의는 dict 하나:
 
@@ -166,5 +172,6 @@ H1:    {역} 인근 방문 관리 안내
 - [ ] `python3 build.py` — 색인 페이지 글자수 2,000+ / 디스크립션 80자 이내
 - [ ] 페이지별 og:image 정상(검색 썸네일), 깨진 내부링크 0
 - [ ] 모바일 실기기 확인 (햄버거, 전화 FAB)
-- [ ] Search Console / 네이버 서치어드바이저 등록 + sitemap.xml 제출
+- [ ] Search Console / 네이버 서치어드바이저 등록 + sitemap.xml·rss.xml 제출
+- [ ] `INDEXNOW_KEY` 새 키로 교체 → `{KEY}.txt` 배포 확인 → `python3 scripts/indexnow.py`
 - [ ] `/support/`, `/privacy/` 연락처·상호 실제 값 확인
