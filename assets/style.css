@@ -372,6 +372,89 @@ strong { color: var(--gold-soft); font-weight: 700; }
   background: linear-gradient(180deg, #13203a, var(--panel-2));
 }
 
+/* 롱테일 내부 링크 카드 (지역·역세권·연관 안내) */
+.link-cards {
+  display: grid; gap: 12px; margin: 20px 0 8px;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  list-style: none; margin-left: 0;
+}
+.link-cards li { margin: 0; }
+.link-cards a {
+  display: block; padding: 16px 18px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 12px; transition: 0.18s;
+}
+.link-cards a:hover {
+  border-color: var(--gold);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, #13203a, var(--panel-2));
+}
+.link-cards strong {
+  display: block; font-family: var(--serif);
+  font-size: 1.02rem; color: var(--gold-soft); margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+.link-cards a:hover strong { color: var(--gold); }
+.link-cards span {
+  display: block; font-size: 0.84rem; color: var(--text-dim); line-height: 1.6;
+}
+
+/* 롱테일 주제별 바로가기 */
+.topic-links {
+  display: grid; gap: 10px 18px; margin: 18px 0 6px;
+  grid-template-columns: repeat(2, 1fr);
+  list-style: none; margin-left: 0;
+}
+.topic-links li { margin: 0; }
+.topic-links a {
+  display: block; padding: 12px 16px; padding-left: 34px; position: relative;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 10px; color: var(--text); font-size: 0.92rem;
+  transition: 0.16s;
+}
+.topic-links a::before {
+  content: "›"; position: absolute; left: 16px; top: 50%;
+  transform: translateY(-50%); color: var(--gold); font-weight: 700;
+}
+.topic-links a:hover {
+  border-color: var(--gold); color: var(--gold-soft);
+  background: linear-gradient(180deg, #13203a, var(--panel-2));
+}
+
+/* 이용 후기 (별점·점수) */
+.review-summary {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px;
+  margin: 4px 0 18px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.review-score {
+  font-family: var(--serif); font-size: 2.3rem; font-weight: 800;
+  color: #fff; line-height: 1;
+}
+.review-score-stars { color: var(--gold); font-size: 1.1rem; letter-spacing: 0.12em; }
+.review-count { color: var(--text-dim); font-size: 0.86rem; }
+.review-list { list-style: none; margin: 0; display: grid; gap: 12px; }
+.review-item {
+  margin: 0; padding: 16px 18px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px;
+}
+.review-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px;
+}
+.review-author { font-weight: 700; color: var(--gold-soft); font-size: 0.92rem; }
+.review-stars { color: var(--gold); font-size: 0.92rem; letter-spacing: 0.08em; white-space: nowrap; }
+.review-body { margin: 0; color: var(--text-dim); font-size: 0.92rem; line-height: 1.8; }
+.review-date {
+  display: block; margin-top: 8px;
+  font-size: 0.76rem; color: var(--text-dim); opacity: 0.7; letter-spacing: 0.06em;
+}
+
+@media (max-width: 600px) {
+  .topic-links { grid-template-columns: 1fr; }
+}
+
 /* 안내 박스 */
 .info-box {
   background: var(--panel-2); border: 1px solid var(--line-gold);

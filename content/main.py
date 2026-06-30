@@ -2,27 +2,21 @@
 from .site import BASE_URL, BRAND, PHONE, PHONE_DISPLAY
 
 # 검색엔진 사이트 소유확인 메타 (메인 페이지에만 출력).
-_VERIFY = '<meta name="naver-site-verification" content="79edd398d8065164a504c96710b7785b394c75c2">\n'
+# 네이버 서치어드바이저 소유확인 코드 — 도메인 변경(netlify) 후 재발급분.
+_VERIFY = '<meta name="naver-site-verification" content="5e31803918ade3e139fc85b487406d4ad1ae243e">\n'
 
+# 사이트 전역 Organization/WebSite 스키마(메인에만 출력).
+# WebPage·BreadcrumbList·FAQPage·Service(후기·별점·점수)는 build.py 가
+# 모든 페이지에 자동 생성하므로 여기서는 중복 출력하지 않는다.
 # 실제 오프라인 매장 주소가 없으므로 LocalBusiness 대신 Organization 을 사용한다.
 _JSONLD = f"""<script type="application/ld+json">
 {{
   "@context": "https://schema.org",
-  "@type": "WebPage",
-  "name": "구리 출장마사지·홈타이 지역별 예약 안내",
+  "@type": "WebSite",
+  "name": "{BRAND}",
   "url": "{BASE_URL}/",
-  "description": "구리 출장마사지·홈타이 예약 전 행정동, 역세권, 이용 기준을 정리한 안내 페이지",
   "inLanguage": "ko-KR",
-  "isPartOf": {{ "@type": "WebSite", "name": "{BRAND}", "url": "{BASE_URL}/" }}
-}}
-</script>
-<script type="application/ld+json">
-{{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {{ "@type": "ListItem", "position": 1, "name": "구리 출장마사지·홈타이", "item": "{BASE_URL}/" }}
-  ]
+  "description": "경기도 구리시 전지역 방문 출장마사지·홈타이 예약 안내"
 }}
 </script>
 <script type="application/ld+json">
@@ -42,39 +36,6 @@ _JSONLD = f"""<script type="application/ld+json">
     "areaServed": "KR",
     "availableLanguage": "Korean"
   }}
-}}
-</script>
-<script type="application/ld+json">
-{{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {{
-      "@type": "Question",
-      "name": "구리시 전지역 방문이 가능한가요?",
-      "acceptedAnswer": {{ "@type": "Answer", "text": "예약 시간, 정확한 위치, 배정 상황에 따라 가능 여부가 달라집니다. 갈매동, 동구동, 인창동, 교문동, 수택동 대표 행정동 기준으로 안내하며 토평·인접 지역도 위치에 따라 가능할 수 있습니다." }}
-    }},
-    {{
-      "@type": "Question",
-      "name": "구리역이나 장자호수공원역 인근도 가능한가요?",
-      "acceptedAnswer": {{ "@type": "Answer", "text": "구리역, 갈매역, 동구릉역, 장자호수공원역 역세권은 각 역 안내 페이지에서 주변 생활권과 함께 확인할 수 있습니다. 정확한 가능 여부는 예약 시 주소 기준으로 확인합니다." }}
-    }},
-    {{
-      "@type": "Question",
-      "name": "교문1·2동, 수택1·2·3동은 왜 따로 없나요?",
-      "acceptedAnswer": {{ "@type": "Answer", "text": "번호로 나뉜 행정동은 교문동, 수택동 대표 페이지에서 통합 안내하여 중복 페이지 위험을 줄입니다." }}
-    }},
-    {{
-      "@type": "Question",
-      "name": "당일 예약도 가능한가요?",
-      "acceptedAnswer": {{ "@type": "Answer", "text": "가능할 수 있지만 저녁 시간대와 주말은 문의가 몰릴 수 있어 사전 예약을 권장합니다." }}
-    }},
-    {{
-      "@type": "Question",
-      "name": "홈타이와 출장마사지는 무엇이 다른가요?",
-      "acceptedAnswer": {{ "@type": "Answer", "text": "출장마사지는 관리사가 자택·숙소·사무실로 방문하는 형태 전체를 가리키고, 홈타이는 그중 집에서 받는 타이마사지를 부르는 말입니다. 자세한 내용은 홈타이 이용 가이드에서 확인하세요." }}
-    }}
-  ]
 }}
 </script>
 """
@@ -114,23 +75,38 @@ _BODY = f"""
 <section id="areas">
 <h2>대표 행정동별 방문 가능 지역 안내</h2>
 <p>구리시는 행정구가 없어 구리시 → 대표 행정동 → 지하철역 순서로 안내합니다. 지역 안내는 갈매동, 동구동, 인창동, 교문동, 수택동 다섯 개 대표 행정동을 기준으로 구성했습니다. 교문1동과 교문2동은 교문동으로, 수택1·2·3동은 수택동으로 통합해, 같은 생활권을 잘게 쪼개 비슷한 내용을 반복하지 않도록 정리했습니다. 거주하시거나 머무시는 동을 선택해 주세요.</p>
-<ul class="card-grid">
-<li><a href="/guri/galmae-dong-chuljangmassage/">갈매동</a></li>
-<li><a href="/guri/donggu-dong-chuljangmassage/">동구동</a></li>
-<li><a href="/guri/inchang-dong-chuljangmassage/">인창동</a></li>
-<li><a href="/guri/gyomun-dong-chuljangmassage/">교문동</a></li>
-<li><a href="/guri/sutaek-dong-chuljangmassage/">수택동</a></li>
+<ul class="link-cards">
+<li><a href="/guri/galmae-dong-chuljangmassage/"><strong>갈매동 출장마사지</strong><span>갈매역·갈매지구 신도시 홈타이</span></a></li>
+<li><a href="/guri/donggu-dong-chuljangmassage/"><strong>동구동 출장마사지</strong><span>동구릉역·사노동 외곽 생활권</span></a></li>
+<li><a href="/guri/inchang-dong-chuljangmassage/"><strong>인창동 출장마사지</strong><span>구리역 도심 환승권 방문 관리</span></a></li>
+<li><a href="/guri/gyomun-dong-chuljangmassage/"><strong>교문동 출장마사지</strong><span>구리시청·교문사거리·아차산 생활권</span></a></li>
+<li><a href="/guri/sutaek-dong-chuljangmassage/"><strong>수택동 출장마사지</strong><span>장자호수공원·돌다리 대표 주거권</span></a></li>
 </ul>
 </section>
 
 <section id="stations">
 <h2>구리역·갈매역·동구릉역·장자호수공원역 안내</h2>
 <p>역을 기준으로 위치를 설명하는 것이 편하시다면 역세권 안내를 참고하세요. 구리역은 경의중앙선과 8호선이 만나는 환승역이고, 갈매역은 경춘선, 동구릉역과 장자호수공원역은 2024년 개통한 8호선 별내선 구간입니다. 환승역이라도 노선별로 페이지를 따로 만들지 않고 역마다 한 페이지로 안내합니다.</p>
-<ul class="card-grid">
-<li><a href="/guri/guri-station-chuljangmassage/">구리역</a></li>
-<li><a href="/guri/galmae-station-chuljangmassage/">갈매역</a></li>
-<li><a href="/guri/donggureung-station-chuljangmassage/">동구릉역</a></li>
-<li><a href="/guri/jangja-lake-park-station-chuljangmassage/">장자호수공원역</a></li>
+<ul class="link-cards">
+<li><a href="/guri/guri-station-chuljangmassage/"><strong>구리역 출장마사지</strong><span>경의중앙·8호선 환승권 인창동·수택동</span></a></li>
+<li><a href="/guri/galmae-station-chuljangmassage/"><strong>갈매역 출장마사지</strong><span>경춘선 갈매역 갈매지구 주거권</span></a></li>
+<li><a href="/guri/donggureung-station-chuljangmassage/"><strong>동구릉역 출장마사지</strong><span>8호선 별내선 인창동·동구동 생활권</span></a></li>
+<li><a href="/guri/jangja-lake-park-station-chuljangmassage/"><strong>장자호수공원역 출장마사지</strong><span>별내선 수택동·토평 호수공원 생활권</span></a></li>
+</ul>
+</section>
+
+<section id="topics">
+<h2>구리 출장마사지·홈타이 주제별 바로가기</h2>
+<p>찾으시는 상황이 분명하다면 아래 주제별 안내로 바로 이동하실 수 있습니다. 지역·역세권 안내와 예약·이용 가이드를 자주 찾는 검색 주제 기준으로 모았습니다.</p>
+<ul class="topic-links">
+<li><a href="/hometai/">구리 홈타이와 출장마사지 차이 알아보기</a></li>
+<li><a href="/reservation/">구리 출장마사지 예약 방법·이동비·결제 기준</a></li>
+<li><a href="/guide/">출장마사지 처음 이용 시 준비물·위생 기준</a></li>
+<li><a href="/guri/guri-station-chuljangmassage/">구리역 인근 24시간 출장마사지 안내</a></li>
+<li><a href="/guri/sutaek-dong-chuljangmassage/">수택동·토평 장자호수공원 홈타이</a></li>
+<li><a href="/guri/galmae-dong-chuljangmassage/">갈매지구 신도시 자택 방문 마사지</a></li>
+<li><a href="/guri/inchang-dong-chuljangmassage/">인창동 오피스텔·숙소 출장마사지</a></li>
+<li><a href="/support/">구리 출장마사지 고객센터·자주 묻는 질문</a></li>
 </ul>
 </section>
 
