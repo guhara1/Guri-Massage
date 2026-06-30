@@ -9,6 +9,7 @@ content/ 패키지의 페이지 정의를 읽어 정적 HTML을 생성한다.
   - 지역+역+테마 조합 경로는 생성 자체가 불가능한 구조
 """
 import html
+import json
 import os
 import re
 import shutil
@@ -17,7 +18,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from content import PAGES
-from content.site import (BASE_URL, BRAND, NAV, PHONE, PHONE_DISPLAY, INDEXNOW_KEY)
+from content.site import (BASE_URL, BRAND, NAV, PHONE, PHONE_DISPLAY, INDEXNOW_KEY, RELATED)
+from content.reviews import REVIEWS
 from datetime import datetime, timezone
 from email.utils import format_datetime
 
@@ -111,6 +113,172 @@ def render_toc(items) -> str:
     )
 
 
+def _abs(base: str, href: str) -> str:
+    """상대 경로(href)를 절대 URL 로. 외부 URL 은 그대로 둔다."""
+    if href.startswith(("http://", "https://")):
+        return href
+    return base + href
+
+
+def _stars(n: int) -> str:
+    n = max(0, min(5, int(round(n))))
+    return "★" * n + "☆" * (5 - n)
+
+
+def extract_faq(body: str):
+    """본문의 .faq-item(h3 질문 / p 답변)을 FAQ 데이터로 추출한다."""
+    out = []
+    for m in re.finditer(r'<div class="faq-item">\s*<h3>(.*?)</h3>\s*<p>(.*?)</p>', body, re.S):
+        q = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", m.group(1)))).strip()
+        a = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", m.group(2)))).strip()
+        q = re.sub(r"^Q\.\s*", "", q)
+        a = re.sub(r"^A\.\s*", "", a)
+        if q and a:
+            out.append((q, a))
+    return out
+
+
+def render_reviews(reviews) -> str:
+    """이용 후기 섹션(별점·점수·후기 목록)을 본문 HTML 로 만든다."""
+    if not reviews:
+        return ""
+    avg = round(sum(r["rating"] for r in reviews) / len(reviews), 1)
+    cards = []
+    for r in reviews:
+        cards.append(
+            '<li class="review-item">'
+            '<div class="review-head">'
+            f'<span class="review-author">{esc(r["author"])}</span>'
+            f'<span class="review-stars" aria-label="별점 {r["rating"]}점">{_stars(r["rating"])}</span>'
+            "</div>"
+            f'<p class="review-body">{esc(r["body"])}</p>'
+            f'<time class="review-date" datetime="{r["date"]}">{r["date"]}</time>'
+            "</li>"
+        )
+    return (
+        '<section id="reviews" class="reviews">'
+        "<h2>이용 후기</h2>"
+        '<div class="review-summary">'
+        f'<span class="review-score">{avg}</span>'
+        f'<span class="review-score-stars" aria-hidden="true">{_stars(avg)}</span>'
+        f'<span class="review-count">5점 만점 · 후기 {len(reviews)}건</span>'
+        "</div>"
+        '<ul class="review-list">' + "".join(cards) + "</ul>"
+        "</section>"
+    )
+
+
+def render_related(path: str) -> str:
+    """함께 보면 좋은 안내(내부 링크 강화) 섹션."""
+    items = RELATED.get(path)
+    if not items:
+        return ""
+    cards = "".join(
+        f'<li><a href="{href}"><strong>{label}</strong><span>{sub}</span></a></li>'
+        for href, label, sub in items
+    )
+    return (
+        '<section id="related" class="related-links">'
+        "<h2>함께 보면 좋은 안내</h2>"
+        f'<ul class="link-cards">{cards}</ul>'
+        "</section>"
+    )
+
+
+def insert_before_cta(body: str, insert_html: str) -> str:
+    """본문 끝 CTA 섹션 앞에 섹션을 끼워 넣는다. CTA 가 없으면 맨 뒤에 붙인다."""
+    if not insert_html:
+        return body
+    m = re.search(r'<section[^>]*\bclass="[^"]*\bcta\b[^"]*"', body)
+    if m:
+        i = m.start()
+        return body[:i] + insert_html + body[i:]
+    return body + insert_html
+
+
+def build_jsonld(page: dict, canonical: str, base: str, body: str, reviews) -> str:
+    """모든 페이지 공통 구조화 데이터: WebPage·BreadcrumbList·FAQPage·Service(후기·별점·점수)."""
+    blocks = [
+        {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": page["title"],
+            "url": canonical,
+            "description": page["desc"],
+            "inLanguage": "ko-KR",
+            "isPartOf": {"@type": "WebSite", "name": BRAND, "url": base + "/"},
+        }
+    ]
+
+    crumb_items = [{"@type": "ListItem", "position": 1, "name": "홈", "item": base + "/"}]
+    for i, (label, href) in enumerate(page.get("breadcrumb") or [], start=2):
+        crumb_items.append({
+            "@type": "ListItem",
+            "position": i,
+            "name": label,
+            "item": _abs(base, href) if href else canonical,
+        })
+    blocks.append({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": crumb_items,
+    })
+
+    faq = extract_faq(body)
+    if faq:
+        blocks.append({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {"@type": "Question", "name": q,
+                 "acceptedAnswer": {"@type": "Answer", "text": a}}
+                for q, a in faq
+            ],
+        })
+
+    if reviews:
+        avg = round(sum(r["rating"] for r in reviews) / len(reviews), 1)
+        blocks.append({
+            "@context": "https://schema.org",
+            "@type": "Service",
+            "name": page.get("h1") or page["title"],
+            "serviceType": "출장마사지·홈타이 방문 관리",
+            "url": canonical,
+            "areaServed": {"@type": "AdministrativeArea", "name": "경기도 구리시"},
+            "provider": {
+                "@type": "Organization", "name": BRAND,
+                "url": base + "/", "telephone": PHONE,
+            },
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": avg,
+                "reviewCount": len(reviews),
+                "bestRating": 5,
+                "worstRating": 1,
+            },
+            "review": [
+                {
+                    "@type": "Review",
+                    "author": {"@type": "Person", "name": r["author"]},
+                    "datePublished": r["date"],
+                    "reviewRating": {
+                        "@type": "Rating", "ratingValue": r["rating"],
+                        "bestRating": 5, "worstRating": 1,
+                    },
+                    "reviewBody": r["body"],
+                }
+                for r in reviews
+            ],
+        })
+
+    return "".join(
+        '<script type="application/ld+json">\n'
+        + json.dumps(b, ensure_ascii=False, indent=2)
+        + "\n</script>\n"
+        for b in blocks
+    )
+
+
 def render_page(page: dict) -> str:
     path = page["path"]
     title = page["title"]
@@ -121,17 +289,26 @@ def render_page(page: dict) -> str:
     extra_head = page.get("extra_head", "")
     hero = page.get("hero", "")
 
+    # 색인 판단은 페이지 고유 본문(후기/연관 링크 삽입 전) 기준으로 한다.
     chars = text_length(body)
     noindex = page.get("noindex", False) or chars < MIN_INDEX_CHARS
     robots = (
         '<meta name="robots" content="noindex,follow">'
         if noindex
-        else '<meta name="robots" content="index,follow">'
+        else '<meta name="robots" content="index,follow,max-image-preview:large">'
     )
-    canonical = BASE_URL.rstrip("/") + "/" + path
+    base = BASE_URL.rstrip("/")
+    canonical = base + "/" + path
 
     # 검색 결과 썸네일용 대표 이미지. 페이지별 og_image 가 있으면 그것을, 없으면 기본 브랜드 이미지를 쓴다.
-    og_url = BASE_URL.rstrip("/") + page.get("og_image", "/assets/og-image.png")
+    og_url = base + page.get("og_image", "/assets/og-image.png")
+
+    # 내부 링크 강화 + 이용 후기 섹션을 본문 끝(트레일링 CTA 앞)에 삽입한다.
+    reviews = REVIEWS.get(path) or []
+    body = insert_before_cta(body, render_reviews(reviews) + render_related(path))
+
+    # 모든 페이지 공통 구조화 데이터(WebPage·BreadcrumbList·FAQPage·Service+후기·별점·점수).
+    extra_head = build_jsonld(page, canonical, base, body, reviews) + extra_head
 
     # 히어로가 있는 페이지(메인)는 H1을 히어로 안에서 출력한다.
     if hero:
@@ -284,10 +461,12 @@ def build() -> None:
     # sitemap.xml (lastmod 포함 — 메인은 priority 높임)
     rows = []
     for u, _t, _d in indexed:
-        pr = "1.0" if u == base + "/" else "0.8"
+        is_home = u == base + "/"
+        pr = "1.0" if is_home else "0.8"
+        cf = "daily" if is_home else "weekly"
         rows.append(
             f"  <url><loc>{u}</loc><lastmod>{today}</lastmod>"
-            f"<changefreq>weekly</changefreq><priority>{pr}</priority></url>"
+            f"<changefreq>{cf}</changefreq><priority>{pr}</priority></url>"
         )
     with open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8") as f:
         f.write(
@@ -324,13 +503,15 @@ def build() -> None:
             "  </channel>\n</rss>\n"
         )
 
-    # robots.txt — 주요 검색봇 명시 허용 + 사이트맵 안내 (네이버 Yeti 포함)
+    # robots.txt — 주요 검색봇 명시 허용 + 사이트맵 안내
+    # (구글 Googlebot, 네이버 Yeti, 빙 bingbot, 다음 Daumoa 포함)
     with open(os.path.join(ROOT, "robots.txt"), "w", encoding="utf-8") as f:
         f.write(
             "User-agent: *\nAllow: /\n\n"
             "User-agent: Googlebot\nAllow: /\n\n"
             "User-agent: Yeti\nAllow: /\n\n"
             "User-agent: bingbot\nAllow: /\n\n"
+            "User-agent: Daumoa\nAllow: /\n\n"
             f"Sitemap: {base}/sitemap.xml\n"
         )
 

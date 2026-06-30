@@ -10,4 +10,7 @@ Allow: /
 User-agent: bingbot
 Allow: /
 
-Sitemap: https://guri-massage.pages.dev/sitemap.xml
+User-agent: Daumoa
+Allow: /
+
+Sitemap: https://guri-massage.netlify.app/sitemap.xml

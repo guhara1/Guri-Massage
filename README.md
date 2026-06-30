@@ -12,15 +12,28 @@
 - 생성물(각 디렉터리의 `index.html`, `sitemap.xml`, `robots.txt`)도 저장소에 포함
 
 ```
-build.py            # 빌드 스크립트 (레이아웃·목차·글자수 검사·sitemap 생성)
+build.py            # 빌드 스크립트 (레이아웃·목차·글자수 검사·내부링크·후기·스키마·sitemap 생성)
 content/
-  site.py           # 상호(간다GO)·전화·BASE_URL·메뉴 구조
-  main.py           # 메인 페이지 (+ WebPage/BreadcrumbList/Organization/FAQPage JSON-LD)
+  site.py           # 상호(간다GO)·전화·BASE_URL·메뉴 구조·RELATED(내부 링크 맵)
+  main.py           # 메인 페이지 (+ WebSite/Organization JSON-LD, 롱테일 링크/주제 섹션)
+  reviews.py        # 페이지별 이용 후기 데이터(후기·별점·점수) — 빌드가 후기 섹션 + Review/AggregateRating 생성
   areas.py          # 대표 행정동 5개 (갈매·동구·인창·교문·수택)
   stations.py       # 지하철역 4개 (구리·갈매·동구릉·장자호수공원)
   info.py           # 예약 안내·이용 전 확인사항·홈타이 가이드·고객센터·개인정보 처리방침
 assets/             # CSS, 모바일 내비 JS, 파비콘, OG 이미지
 ```
+
+### 구조화 데이터(JSON-LD) — 모든 페이지 자동 생성
+
+`build.py` 가 모든 페이지에 다음 스키마를 자동으로 넣습니다.
+
+- `WebPage` · `BreadcrumbList` — 전 페이지
+- `FAQPage` — 본문에 `.faq-item` 이 있으면 자동 추출
+- `Service` + `AggregateRating` + `Review` — `content/reviews.py` 의 후기/별점 기반 (후기·리뷰·점수)
+- 메인에만 `WebSite` · `Organization` (사이트 전역 정보)
+
+> ⚠️ `content/reviews.py` 의 후기는 **예시 템플릿**입니다. 실제 운영 시 진짜 후기로 교체하세요.
+> 구글·네이버는 페이지에 보이는 후기와 다른 별점/리뷰 마크업을 정책 위반으로 봅니다.
 
 ## 페이지 구성 (총 15개)
 
@@ -62,7 +75,7 @@ python3 build.py
 
 ## 배포 전 해야 할 일
 
-1. `content/site.py`의 `BASE_URL`을 실제 도메인으로 변경 → 현재 `https://guri-massage.pages.dev`
+1. `content/site.py`의 `BASE_URL`을 실제 도메인으로 변경 → 현재 `https://guri-massage.netlify.app`
 2. `python3 build.py` 재실행 (canonical·sitemap·rss·robots·IndexNow 키 파일에 반영됨)
 3. 아래 "빠른 색인" 절차 진행
 
@@ -85,10 +98,10 @@ python3 build.py
 ### 2) IndexNow — 빙·네이버·얀덱스 즉시 색인 통보 (글 추가/수정 때마다)
 ```bash
 python3 scripts/indexnow.py                  # 사이트맵 전체 통보
-python3 scripts/indexnow.py https://guri-massage.pages.dev/guri/...  # 특정 URL만
+python3 scripts/indexnow.py https://guri-massage.netlify.app/guri/...  # 특정 URL만
 ```
 - 키 파일 `/{INDEXNOW_KEY}.txt` 가 배포되어 접근 가능해야 동작합니다(빌드가 생성).
-- Cloudflare Pages 사용 시 대시보드 **Caching → Crawler Hints(IndexNow)** 를 켜면 변경분이 자동 통보되기도 합니다.
+- Netlify 사용 시 빌드 후 배포가 끝나면 위 IndexNow 통보 스크립트를 실행해 변경분을 즉시 알립니다.
 
 ### 3) (선택) 구글 Indexing API — 개별 URL 즉시 요청
 구글은 IndexNow 미참여. 공식적으로 Indexing API 는 JobPosting/BroadcastEvent 전용이라,
